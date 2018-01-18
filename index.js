@@ -17,19 +17,20 @@ const context = {
 const locales = {
   "zh_CN": {
     "locale": "简体中文",
-    "email_config_success": "邮件配置成功",
+    "email_config_success": "邮件服务“{{name}}”配置成功",
     "email_send_failed": "邮件发送失败，请稍后重试",
     "email_send_success": "邮件发送成功：{{messageId}}",
   },
   "zh_TW": {
     "locale": "繁體中文",
     "email_config_success": "郵件配置成功",
+    "email_config_success": "郵件服務“{{name}}”配置成功",
     "email_send_failed": "郵件發送失敗，請稍後重試",
     "email_send_success": "郵件發送成功：{{messageId}}"
   },
   "en_US": {
     "locale": "English",
-    "email_config_success": "Mail configuration is successful.",
+    "email_config_success": "Transporter '{{name}}' configured successfully.",
     "email_send_failed": "Email failed, please try again later.",
     "email_send_success": "Message sent: {{messageId}}."
   }
@@ -43,11 +44,78 @@ const locales = {
 function onload(app, options) {
   context.app = app;
   context.options = options;
-  context.api.mailTransporter = nodemailer.createTransport(Object.assign({
-    port: 587,
-    secure: false
-  }, options));
-  app.info(app.getLocaleString('email_config_success'));
+  if (Array.isArray(options) && options.length > 0) {
+    for (const item of options) {
+      createTransport(app, item);
+    }
+  } else {
+    options.name = 'default';
+    createTransport(app, options);
+  }
+}
+
+/**
+ * 创建邮件transporter
+ * @param {*} options 
+ */
+function createTransport(app, options) {
+  if (!options || !options.name) return;
+
+  const trs = context.api.mailTransporters || {};
+  try {
+    const tr = nodemailer.createTransport(Object.assign({
+      port: 587,
+      secure: false
+    }, options));
+    trs[options.name] = tr;
+  } catch (error) { }
+
+  context.api.mailTransporters = trs;
+  app.info(app.getLocaleString('email_config_success', { name: options.name }));
+  return trs[options.name];
+}
+
+/**
+ * 发送邮件路由
+ */
+async function sendMailRoute(ctx) {
+  try {
+    const info = await sendMail(ctx.request.body);
+    ctx.body = { data: info };
+  } catch (error) {
+    ctx.body = {
+      errcode: 500,
+      errmsg: app.info(app.getLocaleString('email_send_failed')),
+      errstack: error.message
+    }
+  }
+}
+
+/**
+ * 发件API
+ * @param {} mailOptions 
+ */
+async function sendMail(mailOptions) {
+  const app = context.app;
+  mailOptions.from = mailOptions.from || context.options.from;
+  const name = mailOptions.name || 'default';
+  const transporter = context.api.mailTransporters[name];
+  if (!transporter) throw new Error(`Transporter '${name}' is not configured.`);
+
+  try {
+    const info = await (new Promise((resolve, reject) => {
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          return reject(error);
+        }
+        return resolve(info);
+      });
+    }));
+    app.info(app.getLocaleString('email_send_success', { messageId: info.messageId }));
+    return info;
+  } catch (error) {
+    app.info(app.getLocaleString('email_send_failed') + ` ${error.message} `);
+  }
 }
 
 /**
@@ -58,25 +126,7 @@ const routes = {
     name: 'send_mail',
     method: 'POST',
     path: '/send_mail',
-    middleware: async ctx => {
-      try {
-        const info = await (new Promise((resolve, reject) => {
-          context.api.sendMail(ctx.request.body, (error, info) => {
-            if (error) {
-              return reject(error);
-            }
-            resolve(info);
-          });
-        }));
-        ctx.body = { data: info };
-      } catch (error) {
-        ctx.body = {
-          errcode: 500,
-          errmsg: app.info(app.getLocaleString('email_send_failed')),
-          errstack: error.message
-        }
-      }
-    }
+    middleware: sendMailRoute
   }
 };
 
@@ -84,17 +134,7 @@ const routes = {
  * 插件API
  */
 const api = {
-  sendMail: (mailOptions, callback) => {
-    const transporter = context.api.mailTransporter;
-    mailOptions.from = mailOptions.from || context.options.from;
-    callback = typeof callback === 'function' ? callback : (error, info) => {
-      if (error) {
-        return app.info(app.getLocaleString('email_send_failed') + ` ${error.message} `);
-      }
-      app.info(app.getLocaleString('email_send_success', { messageId: info.messageId }));
-    };
-    transporter.sendMail(mailOptions, callback);
-  }
+  sendMail
 }
 
 module.exports = {
