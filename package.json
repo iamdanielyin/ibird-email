@@ -1,0 +1,30 @@
+{
+  "name": "ibird-email",
+  "version": "1.0.0-alpha.1",
+  "description": "Email addon for ibird.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yinfxs/ibird-email.git"
+  },
+  "keywords": [
+    "ibird",
+    "node",
+    "koa",
+    "web",
+    "app",
+    "http",
+    "application",
+    "email",
+    "ibird-addon"
+  ],
+  "author": "yinfxs",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/yinfxs/ibird-email/issues"
+  },
+  "homepage": "https://github.com/yinfxs/ibird-email#readme",
+  "dependencies": {
+    "nodemailer": "^4.4.1"
+  }
+}
