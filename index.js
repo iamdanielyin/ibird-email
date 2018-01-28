@@ -19,20 +19,20 @@ const locales = {
     "locale": "简体中文",
     "email_config_success": "邮件服务“{{name}}”配置成功",
     "email_send_failed": "邮件发送失败，请稍后重试",
-    "email_send_success": "邮件发送成功：{{messageId}}",
+    "email_send_success": "邮件发送成功：{{{messageId}}}",
   },
   "zh_TW": {
     "locale": "繁體中文",
     "email_config_success": "郵件配置成功",
     "email_config_success": "郵件服務“{{name}}”配置成功",
     "email_send_failed": "郵件發送失敗，請稍後重試",
-    "email_send_success": "郵件發送成功：{{messageId}}"
+    "email_send_success": "郵件發送成功：{{{messageId}}}"
   },
   "en_US": {
     "locale": "English",
     "email_config_success": "Transporter '{{name}}' configured successfully.",
     "email_send_failed": "Email failed, please try again later.",
-    "email_send_success": "Message sent: {{messageId}}."
+    "email_send_success": "Message sent: {{{messageId}}}."
   }
 }
 
